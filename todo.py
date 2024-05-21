@@ -43,7 +43,7 @@ def delete_todo():
         todo_index = int(input("Enter the number to the todo to delete: ")) - 1
         if 0 <= todo_index < len(todos):
             removed = todos.pop(todo_index)
-            saved_todos(todos)
+            saved_todos(todos) # type: ignore
             print(f"Deleted: {removed}")
         else:
             print("Invalid number.")
@@ -51,3 +51,32 @@ def delete_todo():
         print("Please enter a valid number.")
 
 # Create Interface
+def show_menu():
+    print("\nTodo List Menu")
+    print("1. View todos")
+    print("2. Add a todo")
+    print("3. Delete a todo")
+    print("4. Exit")
+
+def main():
+    global todos
+    todos = load_todos()
+
+    while True:
+        show_menu()
+        choice = input("Choose an option: ")
+
+        if choice == '1':
+            view_todos()
+        elif choice == '2':
+            add_todo()
+        elif choice == '3':
+            delete_todo()
+        elif choice == '4':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please select a valid option.")
+
+if __name__ == "__main__":
+    main()
