@@ -29,10 +29,25 @@ def add_todo(todos):
     with open(TODO_FILE, 'w') as file:
         for todo in todos:
             file.write(todo + '\n')
-# Save
 
+# Save
+def save_todos(todos):
+    with open(TODO_FILE, 'w') as file:
+        for todo in todos:
+            file.write(todo + '\n')
 
 # Delete
-
+def delete_todo():
+    view_todos()
+    try:
+        todo_index = int(input("Enter the number to the todo to delete: ")) - 1
+        if 0 <= todo_index < len(todos):
+            removed = todos.pop(todo_index)
+            saved_todos(todos)
+            print(f"Deleted: {removed}")
+        else:
+            print("Invalid number.")
+    except ValueError:
+        print("Please enter a valid number.")
 
 # Create Interface
