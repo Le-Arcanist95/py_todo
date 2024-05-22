@@ -124,5 +124,89 @@ class TestTodoList(unittest.TestCase):
         # Check that an error message was printed
         mock_print.assert_called_with('Please enter a valid number.')
 
+    @patch('todo.open', new_callable=mock_open)
+    @patch('os.path.exists', return_value=False)
+    def test_load_todos_empty_file(self, mock_exists, mock_open):
+        """
+        Test the load_todos function when the TODO_FILE does not exist.
+        Ensures it returns an empty list.
+        """
+        # Call the load_todos function, which should return an empty list
+        todos = load_todos()
+        # Assert that the returned list is empty
+        self.assertEqual(todos, [])
+        # Verify that os.path.exists was called once with the correct file path
+        mock_exists.assert_called_once_with(TODO_FILE)
+
+    @patch('todo.open', new_callable=mock_open, read_data='')
+    @patch('os.path.exists', return_value=True)
+    def test_load_todos_no_content(self, mock_exists, mock_open):
+        """
+        Test the load_todos function when the TODO_FILE exists but is empty.
+        Ensures it returns an empty list.
+        """
+        # Call the load_todos function, which should return an empty list
+        todos = load_todos()
+        # Assert that the returned list is empty
+        self.assertEqual(todos, [])
+        # Verify that the open function was called once with the correct file path in read mode
+        mock_open.assert_called_once_with(TODO_FILE, 'r')
+        # Verify that os.path.exists was called once with the correct file path
+        mock_exists.assert_called_once_with(TODO_FILE)
+
+    @patch('todo.input', return_value='New Task')
+    @patch('todo.save_todos')
+    def test_add_todo_empty_list(self, mock_save_todos, mock_input):
+        """
+        Test the add_todo function to ensure it correctly adds a new todo item to an empty list.
+        Mocks input to simulate user input and save_todos to avoid actual file operations.
+        """
+        global todos
+        # Initialize todos as an empty list for this test
+        todos = []
+        # Mock print to avoid output during tests
+        with patch('builtins.print'):
+            # Call the add_todo function, which should add 'New Task' to the list
+            add_todo()
+        # Assert that 'New Task' is in the todos list
+        self.assertIn('New Task', todos)
+        # Verify that the save_todos function was called once with the updated list
+        mock_save_todos.assert_called_once_with(todos)
+
+    @patch('todo.input', return_value='0')
+    @patch('builtins.print')
+    def test_delete_todo_zero_index(self, mock_print, mock_input):
+        """
+        Test the delete_todo function with a zero index to ensure it handles the input correctly.
+        Mocks input to simulate user input and print to capture output.
+        """
+        # Use a copy of the sample list of todos for this test
+        with patch('todo.todos', self.todos.copy()):
+            # Call the delete_todo function with a zero index
+            delete_todo()
+        # Assert that the todos list remains unchanged
+        self.assertEqual(len(todos), len(self.todos))
+        # Verify that 'Invalid number.' was printed
+        mock_print.assert_called_with('Invalid number.')
+
+    @patch('todo.input', return_value='1')
+    @patch('todo.save_todos')
+    @patch('builtins.print')
+    def test_delete_todo_last_item(self, mock_print, mock_save_todos, mock_input):
+        """
+        Test the delete_todo function to ensure it correctly deletes the last todo item.
+        Mocks input to simulate user input, save_todos to avoid actual file operations, and print to capture output.
+        """
+        # Use a single-item list for this test
+        with patch('todo.todos', ['Task 1']):
+            # Call the delete_todo function to delete the last item
+            delete_todo()
+        # Assert that 'Task 1' is not in the todos list
+        self.assertNotIn('Task 1', todos)
+        # Verify that the save_todos function was called once with the updated list
+        mock_save_todos.assert_called_once_with(todos)
+        # Verify that a confirmation message was printed
+        mock_print.assert_called()
+
 if __name__ == '__main__':
     unittest.main()
