@@ -1,9 +1,8 @@
 import unittest
 from unittest.mock import patch, mock_open
-import os
 
-# Importing the functions from the todo module
-from todo import load_todos, save_todos, add_todo, view_todos, delete_todo, TODO_FILE
+# Import the functions from the todo module
+from todo import load_todos, save_todos, add_todo, view_todos, delete_todo, edit_todo, TODO_FILE
 
 class TestTodoList(unittest.TestCase):
 
@@ -12,7 +11,6 @@ class TestTodoList(unittest.TestCase):
         Set up the test environment before each test method is run.
         Initializes a sample list of todos and sets up a mock for file operations.
         """
-        # Sample list of todos
         self.todos = ['Task 1', 'Task 2', 'Task 3']
         # Mocking open to simulate file operations with sample data
         self.mock_open = mock_open(read_data='\n'.join(self.todos) + '\n')
@@ -23,6 +21,7 @@ class TestTodoList(unittest.TestCase):
         """
         Test the load_todos function to ensure it correctly loads todos from a file.
         Mocks os.path.exists to simulate the presence of the TODO_FILE.
+        Mocks open to simulate reading from the file.
         """
         # Call the function to load todos
         todos = load_todos()
@@ -30,6 +29,8 @@ class TestTodoList(unittest.TestCase):
         self.assertEqual(todos, self.todos)
         # Ensure the file was opened in read mode
         mock_open.assert_called_once_with(TODO_FILE, 'r')
+        # Ensure os.path.exists was called to check the file's existence
+        mock_exists.assert_called_once_with(TODO_FILE)
 
     @patch('todo.open', new_callable=mock_open)
     def test_save_todos(self, mock_open):
@@ -130,6 +131,12 @@ class TestTodoList(unittest.TestCase):
         """
         Test the load_todos function when the TODO_FILE does not exist.
         Ensures it returns an empty list.
+        Mocks:
+        - os.path.exists: Simulates the file not existing by returning False.
+        - open: Simulates the open function to avoid actual file operations.
+        Assertions:
+        - Checks that the load_todos function returns an empty list.
+        - Verifies that os.path.exists was called once with the TODO_FILE.
         """
         # Call the load_todos function, which should return an empty list
         todos = load_todos()
@@ -144,6 +151,13 @@ class TestTodoList(unittest.TestCase):
         """
         Test the load_todos function when the TODO_FILE exists but is empty.
         Ensures it returns an empty list.
+        Mocks:
+        - os.path.exists: Simulates the file existing by returning True.
+        - open: Simulates the open function to read an empty file.
+        Assertions:
+        - Checks that the load_todos function returns an empty list.
+        - Verifies that the open function was called once in read mode with the TODO_FILE.
+        - Verifies that os.path.exists was called once with the TODO_FILE.
         """
         # Call the load_todos function, which should return an empty list
         todos = load_todos()
@@ -160,6 +174,12 @@ class TestTodoList(unittest.TestCase):
         """
         Test the add_todo function to ensure it correctly adds a new todo item to an empty list.
         Mocks input to simulate user input and save_todos to avoid actual file operations.
+        Mocks:
+        - input: Simulates user input by returning 'New Task'.
+        - save_todos: Mocks the save_todos function to avoid actual file operations.
+        Assertions:
+        - Checks that the new todo item is added to the list.
+        - Verifies that the save_todos function was called once with the updated list.
         """
         global todos
         # Initialize todos as an empty list for this test
@@ -179,6 +199,12 @@ class TestTodoList(unittest.TestCase):
         """
         Test the delete_todo function with a zero index to ensure it handles the input correctly.
         Mocks input to simulate user input and print to capture output.
+        Mocks:
+        - input: Simulates user input by returning '0'.
+        - print: Mocks the print function to capture and verify output.
+        Assertions:
+        - Checks that the todos list remains unchanged.
+        - Verifies that an 'Invalid number.' message is printed.
         """
         # Use a copy of the sample list of todos for this test
         with patch('todo.todos', self.todos.copy()):
@@ -196,6 +222,14 @@ class TestTodoList(unittest.TestCase):
         """
         Test the delete_todo function to ensure it correctly deletes the last todo item.
         Mocks input to simulate user input, save_todos to avoid actual file operations, and print to capture output.
+        Mocks:
+        - input: Simulates user input by returning '1'.
+        - save_todos: Mocks the save_todos function to avoid actual file operations.
+        - print: Mocks the print function to capture and verify output.
+        Assertions:
+        - Checks that the last todo item is removed from the list.
+        - Verifies that the save_todos function was called once with the updated list.
+        - Verifies that a confirmation message was printed.
         """
         # Use a single-item list for this test
         with patch('todo.todos', ['Task 1']):
@@ -207,6 +241,81 @@ class TestTodoList(unittest.TestCase):
         mock_save_todos.assert_called_once_with(todos)
         # Verify that a confirmation message was printed
         mock_print.assert_called()
+
+    @patch('todo.input', return_value='1')
+    @patch('todo.input', return_value='Updated Task')
+    @patch('todo.save_todos')
+    @patch('builtins.print')
+    def test_edit_todo_valid(self, mock_print, mock_save_todos, mock_input):
+        """
+        Test the edit_todo function to ensure it correctly updates the specified todo item.
+        Mocks input to simulate user input for selecting and updating the todo item,
+        save_todos to avoid actual file operations, and print to capture output.
+        Mocks:
+        - input: Simulates user input for selecting and updating the todo item.
+        - save_todos: Mocks the save_todos function to avoid actual file operations.
+        - print: Mocks the print function to capture and verify output.
+        Assertions:
+        - Checks that the specified todo item is updated in the list.
+        - Verifies that the save_todos function was called once with the updated list.
+        - Verifies that a confirmation message was printed.
+        """
+        # Use a copy of the sample list of todos for this test
+        with patch('todo.todos', self.todos.copy()):
+            # Call the edit_todo function to update the first item
+            edit_todo()
+        # Assert that 'Updated Task' is in the todos list
+        self.assertIn('Updated Task', todos)
+        # Assert that 'Task 1' is not in the todos list
+        self.assertNotIn('Task 1', todos)
+        # Verify that the save_todos function was called once with the updated list
+        mock_save_todos.assert_called_once_with(todos)
+        # Verify that a confirmation message was printed
+        mock_print.assert_called()
+
+    @patch('todo.input', return_value='10')
+    @patch('builtins.print')
+    def test_edit_todo_invalid(self, mock_print, mock_input):
+        """
+        Test the edit_todo function with an invalid index to ensure it handles out-of-range input correctly.
+        Mocks input to simulate user input and print to capture output.
+        Mocks:
+        - input: Simulates user input by returning '10'.
+        - print: Mocks the print function to capture and verify output.
+        Assertions:
+        - Checks that the todos list remains unchanged.
+        - Verifies that an 'Invalid number.' message is printed.
+        """
+        # Use a copy of the sample list of todos for this test
+        with patch('todo.todos', self.todos.copy()):
+            # Call the edit_todo function with an invalid index
+            edit_todo()
+        # Assert that the todos list remains unchanged
+        self.assertEqual(len(todos), len(self.todos))
+        # Verify that 'Invalid number.' was printed
+        mock_print.assert_called_with('Invalid number.')
+
+    @patch('todo.input', side_effect=ValueError)
+    @patch('builtins.print')
+    def test_edit_todo_invalid_input(self, mock_print, mock_input):
+        """
+        Test the edit_todo function with invalid (non-integer) input to ensure it handles input errors correctly.
+        Mocks input to simulate user input and print to capture output.
+        Mocks:
+        - input: Simulates invalid user input (non-integer) by raising a ValueError.
+        - print: Mocks the print function to capture and verify output.
+        Assertions:
+        - Checks that the todos list remains unchanged.
+        - Verifies that a 'Please enter a valid number.' message is printed.
+        """
+        # Use a copy of the sample list of todos for this test
+        with patch('todo.todos', self.todos.copy()):
+            # Call the edit_todo function with invalid input
+            edit_todo()
+        # Assert that the todos list remains unchanged
+        self.assertEqual(len(todos), len(self.todos))
+        # Verify that 'Please enter a valid number.' was printed
+        mock_print.assert_called_with('Please enter a valid number.')
 
 if __name__ == '__main__':
     unittest.main()
